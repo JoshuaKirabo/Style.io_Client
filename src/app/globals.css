@@ -1,0 +1,399 @@
+@import "tailwindcss";
+
+/* White paper, black ink. One rose accent, kept for the drag state and focus rings. */
+:root
+   {
+      --bg: #ffffff;
+      --line: #e4e4e7;
+      --line-control: #8e8e95;
+      --line-strong: #111113;
+      --text: #111113;
+      --text-secondary: #6b6c72;
+      --accent: #c2255c;
+      --accent-soft: #fbe9ef;
+   }
+
+@theme inline
+   {
+      --color-bg: var(--bg);
+      --color-line: var(--line);
+      --color-line-strong: var(--line-strong);
+      --color-text: var(--text);
+      --color-text-secondary: var(--text-secondary);
+      --color-accent: var(--accent);
+      --color-accent-soft: var(--accent-soft);
+      --font-sans: var(--font-archivo), system-ui, sans-serif;
+      --font-display: var(--font-fraunces), Georgia, serif;
+      --font-caps: var(--font-nunito-sans), system-ui, sans-serif;
+   }
+
+body
+   {
+      background: var(--bg);
+      color: var(--text);
+   }
+
+/* The page is built to fit one screen. On a really short window it lets you scroll rather than cut things off. */
+@media (max-height: 34rem)
+   {
+      .app-shell
+         {
+            height: auto;
+            min-height: 100dvh;
+            overflow: visible;
+         }
+   }
+
+/* The frame is sized from the window height. On a phone it takes most of the first screen and the rest scrolls;
+   on desktop it fills the space under the toolbar so nothing scrolls. Its width follows from the 2:3 ratio. */
+.look-frame
+   {
+      height: min(60dvh, 30rem);
+      width: auto;
+   }
+
+@media (min-width: 64rem)
+   {
+      .look-frame
+         {
+            height: min(calc(100dvh - 17.75rem), 44rem);
+         }
+   }
+
+/* On desktop the closet fits as many columns as its space allows: three beside the matches, more when it has
+   the screen to itself. */
+@media (min-width: 64rem)
+   {
+      .closet-strip
+         {
+            grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+         }
+   }
+
+/* Before there's a look, the drop zone is the only thing on the screen, so it takes all of it: a fixed
+   height on a phone, the whole space under the toolbar on desktop. */
+.drop-zone
+   {
+      height: min(60dvh, 30rem);
+   }
+
+@media (min-width: 64rem)
+   {
+      .drop-zone
+         {
+            height: auto;
+            min-height: 0;
+            flex: 1;
+         }
+   }
+
+/* The headline serif: light, high contrast, sharp serifs, set the way Saol Display looks on rino-pelle.com.
+   Big optical size and the soft/wonky axes switched off, so it stays crisp instead of playful. */
+.display
+   {
+      font-family: var(--font-display);
+      font-weight: 340;
+      font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 0;
+      letter-spacing: -0.01em;
+   }
+
+/* The wordmark is set in the headline serif, all ink, with the .io dropped back to grey. Quiet, like an app's
+   name in its own title bar rather than a banner. */
+.wordmark
+   {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 0;
+      line-height: 1;
+      letter-spacing: -0.025em;
+   }
+
+/* Nav tabs. Grey until they're the page you're on; then ink, with a bar sitting on the header's bottom line. */
+.nav-tab
+   {
+      position: relative;
+      display: flex;
+      align-items: center;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      transition: color 150ms ease;
+   }
+
+.nav-tab:hover, .nav-tab[aria-current="page"]
+   {
+      color: var(--text);
+   }
+
+.nav-tab::after
+   {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: -1px;
+      left: 0;
+      height: 2px;
+      background: var(--text);
+      transform: scaleX(0);
+      transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+   }
+
+.nav-tab[aria-current="page"]::after
+   {
+      transform: scaleX(1);
+   }
+
+/* Closet tiles show their Remove bar on hover or keyboard focus. Touch screens have no hover, so it's always there. */
+.tile-remove
+   {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 2.75rem;
+      background: rgb(255 255 255 / 0.94);
+      color: var(--text);
+      opacity: 0;
+      transition: opacity 150ms ease;
+   }
+
+.tile:hover .tile-remove, .tile:focus-within .tile-remove
+   {
+      opacity: 1;
+   }
+
+@media (hover: none)
+   {
+      .tile-remove
+         {
+            opacity: 1;
+         }
+   }
+
+/* Captions (nav, buttons, labels): small, spaced out, all caps, set the way Volta sets its navbar in Avenir
+   Next Demi. Nunito Sans is the free stand-in; swap --font-caps for the real Avenir Next if it gets licensed. */
+.caption
+   {
+      font-family: var(--font-caps);
+      font-weight: 600;
+      font-size: 0.75rem;
+      line-height: 1;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+   }
+
+/* Hard edges, black fill. Press feedback lands the moment you push down, not when you let go. */
+.button-primary
+   {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 2.75rem;
+      padding: 0 1.5rem;
+      background: var(--text);
+      color: #ffffff;
+      white-space: nowrap;
+      transition: transform 120ms ease-out, background-color 150ms ease;
+   }
+
+.button-primary:hover
+   {
+      background: #000000;
+   }
+
+.button-primary:active
+   {
+      transform: scale(0.97);
+   }
+
+/* Off until there's a look. It stays in place so you can see what you're working towards. */
+.button-primary:disabled
+   {
+      background: var(--line);
+      color: var(--text-secondary);
+      cursor: not-allowed;
+      transform: none;
+   }
+
+/* Text links: a caption with an underline that shows up on hover. */
+.link-caption
+   {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.5rem 0;
+      color: var(--text);
+      border-bottom: 1px solid transparent;
+      white-space: nowrap;
+      transition: border-color 150ms ease, color 150ms ease;
+   }
+
+.link-caption:hover
+   {
+      border-color: var(--text);
+   }
+
+.link-caption.is-quiet
+   {
+      color: var(--text-secondary);
+   }
+
+.link-caption.is-quiet:hover
+   {
+      color: var(--text);
+   }
+
+.button-primary:focus-visible, .link-caption:focus-visible, .nav-link:focus-visible, .nav-tab:focus-visible, .tile-remove:focus-visible
+   {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+   }
+
+/* Empty frames sit flat on the page with a hairline around them, the way product shots do on a lookbook spread. */
+.frame
+   {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      transition: border-color 150ms ease, background-color 150ms ease, transform 120ms ease-out;
+   }
+
+/* The empty drop frame reads as an upload area first: a dashed edge dark enough to see (3.25:1 on white),
+   darkening on hover. Holding a file over it turns the edge rose and solid, and tints the inside. */
+.frame.is-drop
+   {
+      border: 1.5px dashed var(--line-control);
+   }
+
+.frame.is-drop:hover
+   {
+      border-color: var(--text);
+   }
+
+.frame.is-dragging
+   {
+      border: 1.5px solid var(--accent);
+      background: var(--accent-soft);
+   }
+
+.frame.is-filled
+   {
+      border-color: var(--line-strong);
+   }
+
+/* The press lands the moment you push down, same as the buttons. */
+.frame.is-drop:has(.drop-label:active)
+   {
+      transform: scale(0.985);
+   }
+
+/* The label is the container, so the prompt scales with the frame instead of the window. */
+.drop-label
+   {
+      container-type: inline-size;
+   }
+
+.drop-title
+   {
+      font-size: clamp(1.75rem, 6cqi, 3rem);
+      line-height: 1;
+      letter-spacing: -0.02em;
+   }
+
+/* The upload arrow lifts toward the frame while a file is held over it, pointing where the file is going. */
+.drop-icon
+   {
+      transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), color 150ms ease;
+   }
+
+.frame.is-dragging .drop-icon
+   {
+      color: var(--accent);
+      transform: translateY(-4px);
+   }
+
+/* The visible "Choose a file" button inside the drop area. The whole frame is the real target; this is the
+   part people look for. */
+.button-secondary
+   {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 2.75rem;
+      padding: 0 1.25rem;
+      border: 1px solid var(--text);
+      background: var(--bg);
+      color: var(--text);
+      white-space: nowrap;
+      transition: background-color 150ms ease, color 150ms ease;
+   }
+
+.frame.is-drop:hover .button-secondary
+   {
+      background: var(--text);
+      color: #ffffff;
+   }
+
+/* One entrance for the page, top to bottom, then everything stays put. */
+@media (prefers-reduced-motion: no-preference)
+   {
+      .rise
+         {
+            animation: rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+         }
+
+      .fade-in
+         {
+            animation: fade-in 260ms ease-out both;
+         }
+
+      /* A dropped look settles into the frame from a touch larger, so it reads as placed, not swapped in. */
+      .settle
+         {
+            animation: settle 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+         }
+   }
+
+@keyframes settle
+   {
+      from
+         {
+            opacity: 0;
+            transform: scale(1.04);
+         }
+   }
+
+@keyframes rise
+   {
+      from
+         {
+            opacity: 0;
+            transform: translateY(12px);
+         }
+   }
+
+@keyframes fade-in
+   {
+      from
+         {
+            opacity: 0;
+         }
+   }
+
+@media (prefers-reduced-motion: reduce)
+   {
+      .button-primary:active, .frame.is-drop:has(.drop-label:active)
+         {
+            transform: none;
+         }
+
+      /* The arrow still turns rose on drag, it just doesn't move. */
+      .drop-icon
+         {
+            transform: none !important;
+         }
+
+      .settle
+         {
+            animation: fade-in 200ms ease-out both;
+         }
+   }
