@@ -16,7 +16,7 @@ const LINKS = [
 export function NavLinks()
   {
     const pathname = usePathname();
-    const { photos } = useCloset();
+    const { pieces } = useCloset();
     const navRef = useRef<HTMLElement>(null);
     const barRef = useRef<HTMLSpanElement>(null);
 
@@ -68,7 +68,7 @@ export function NavLinks()
                 <li key={link.href} className="flex">
                   <Link href={link.href} aria-current={current ? "page" : undefined} className="nav-tab caption">
                     {link.label}
-                    {link.href === "/closet" && <span className="ml-1.5 tabular-nums text-text-secondary">{photos.length}</span>}
+                    {link.href === "/closet" && <span className="ml-1.5 tabular-nums text-text-secondary">{pieces.length}</span>}
                   </Link>
                 </li>
               );

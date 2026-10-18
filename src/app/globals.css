@@ -11,6 +11,7 @@
       --text-secondary: #6b6c72;
       --accent: #c2255c;
       --accent-soft: #fbe9ef;
+      --surface: #f4f4f3;
 
       /* Motion. Small things are quick; the look landing is the one slow, deliberate moment. */
       --motion-fast: 120ms;
@@ -33,6 +34,7 @@
       --color-text-secondary: var(--text-secondary);
       --color-accent: var(--accent);
       --color-accent-soft: var(--accent-soft);
+      --color-surface: var(--surface);
       --font-sans: var(--font-archivo), system-ui, sans-serif;
       --font-display: var(--font-fraunces), Georgia, serif;
       --font-caps: var(--font-nunito-sans), system-ui, sans-serif;
@@ -184,33 +186,6 @@ body
       transition: transform var(--motion-slow) var(--ease-in-out);
    }
 
-/* Closet tiles show their Remove bar on hover or keyboard focus. Touch screens have no hover, so it's always there. */
-.tile-remove
-   {
-      position: absolute;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      height: 2.75rem;
-      background: rgb(255 255 255 / 0.94);
-      color: var(--text);
-      opacity: 0;
-      transition: opacity 150ms ease;
-   }
-
-.tile:hover .tile-remove, .tile:focus-within .tile-remove
-   {
-      opacity: 1;
-   }
-
-@media (hover: none)
-   {
-      .tile-remove
-         {
-            opacity: 1;
-         }
-   }
-
 /* Captions (nav, buttons, labels): small, spaced out, all caps, set the way Volta sets its navbar in Avenir
    Next Demi. Nunito Sans is the free stand-in; swap --font-caps for the real Avenir Next if it gets licensed. */
 .caption
@@ -256,6 +231,41 @@ body
       transform: none;
    }
 
+/* Sync stays ink while it works, so it reads as busy rather than switched off. It keeps one width so the label
+   changing doesn't nudge the toolbar, and the arrows turn while it syncs. */
+.sync-button
+   {
+      min-width: 11.5rem;
+   }
+
+.sync-button:disabled
+   {
+      background: var(--text);
+      color: #ffffff;
+      cursor: progress;
+   }
+
+.sync-button[data-state="synced"]
+   {
+      cursor: default;
+   }
+
+@media (prefers-reduced-motion: no-preference)
+   {
+      .sync-button[data-state="syncing"] .sync-icon
+         {
+            animation: spin 900ms linear infinite;
+         }
+   }
+
+@keyframes spin
+   {
+      to
+         {
+            transform: rotate(360deg);
+         }
+   }
+
 /* Text links: a caption whose underline draws in from the left on hover and leaves off the right. */
 .link-caption
    {
@@ -299,7 +309,7 @@ body
       color: var(--text);
    }
 
-.button-primary:focus-visible, .link-caption:focus-visible, .nav-link:focus-visible, .nav-tab:focus-visible, .tile-remove:focus-visible
+.button-primary:focus-visible, .link-caption:focus-visible, .nav-link:focus-visible, .nav-tab:focus-visible, .filter-tab:focus-visible, .icon-button:focus-visible
    {
       outline: 2px solid var(--accent);
       outline-offset: 2px;
@@ -340,6 +350,232 @@ body
 .look-frame.is-filled
    {
       background: transparent;
+   }
+
+/* Closet pieces sit on a pale grey, like product shots on a seamless backdrop, so white pieces still stand out.
+   A photo that's missing hides itself and leaves just the grey. */
+.piece-surface
+   {
+      background: var(--surface);
+   }
+
+/* Switching pieces in the panel. The new photo waits, hidden, until it has decoded. */
+.photo-swap[data-swap]:not([data-ready])
+   {
+      opacity: 0;
+   }
+
+.piece-photo[data-missing]
+   {
+      visibility: hidden;
+   }
+
+/* A piece in the grid. Hovering darkens its edge, pressing sinks it a touch, and the one you picked gets a
+   double-weight ink edge so it's clear which one the panel is showing. */
+.piece-tile .piece-frame
+   {
+      transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease, transform var(--motion-fast) var(--ease-out);
+   }
+
+.piece-tile:hover .piece-frame
+   {
+      border-color: var(--line-control);
+   }
+
+.piece-tile:active .piece-frame
+   {
+      transform: scale(0.98);
+   }
+
+.piece-tile[aria-pressed="true"] .piece-frame
+   {
+      border-color: var(--line-strong);
+      box-shadow: inset 0 0 0 1px var(--line-strong);
+   }
+
+.piece-tile:focus-visible
+   {
+      outline: none;
+   }
+
+.piece-tile:focus-visible .piece-frame
+   {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+   }
+
+/* Group filters: grey until picked, then ink with a bar on the rail's hairline, the same as the nav tabs. */
+.filter-rail
+   {
+      box-shadow: inset 0 -1px 0 var(--line);
+      scrollbar-width: none;
+   }
+
+.filter-tab
+   {
+      position: relative;
+      display: flex;
+      flex-shrink: 0;
+      align-items: center;
+      height: 2.75rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      transition: color var(--motion-fast) ease;
+   }
+
+.filter-tab:hover, .filter-tab[aria-pressed="true"]
+   {
+      color: var(--text);
+   }
+
+.filter-tab::after
+   {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      background: var(--text);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform var(--motion-medium) var(--ease-out);
+   }
+
+.filter-tab[aria-pressed="true"]::after
+   {
+      transform: scaleX(1);
+   }
+
+.filter-tab:focus-visible
+   {
+      outline-offset: -2px;
+   }
+
+/* A square, borderless icon button with a full 44px target. */
+.icon-button
+   {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.75rem;
+      height: 2.75rem;
+      margin-right: -0.75rem;
+      color: var(--text-secondary);
+      transition: color var(--motion-fast) ease, transform var(--motion-fast) var(--ease-out);
+   }
+
+.icon-button:hover
+   {
+      color: var(--text);
+   }
+
+.icon-button:focus-visible
+   {
+      outline-offset: -2px;
+   }
+
+.icon-button:active
+   {
+      transform: scale(0.92);
+   }
+
+/* On desktop the details stay beside the grid while it scrolls, and scroll on their own if they run long. */
+@media (min-width: 64rem)
+   {
+      .piece-panel
+         {
+            position: sticky;
+            top: 0;
+            max-height: calc(100dvh - 7rem);
+            overflow-y: auto;
+            scrollbar-width: none;
+         }
+
+      .sheet-scrim, .sheet-handle
+         {
+            display: none;
+         }
+   }
+
+/* On a phone the details are a sheet. It rises from the bottom edge, goes back down the same way, and follows
+   your finger while you drag the grip. A scrim behind it dims the closet; tapping it closes the sheet. */
+@media (max-width: 63.99rem)
+   {
+      .piece-panel
+         {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 40;
+            max-height: 88dvh;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding: 0 1rem calc(1.5rem + env(safe-area-inset-bottom));
+            background: var(--bg);
+            border-top: 1px solid var(--line-strong);
+            box-shadow: 0 -16px 48px rgb(17 17 19 / 0.14);
+            visibility: hidden;
+            transform: translateY(calc(100% + 1px));
+            transition: transform var(--motion-slow) var(--ease-out-expo), visibility 0s linear var(--motion-slow);
+         }
+
+      .piece-panel[data-open]
+         {
+            visibility: visible;
+            transform: none;
+            transition: transform var(--motion-slow) var(--ease-out-expo), visibility 0s;
+         }
+
+      .piece-panel[data-dragging]
+         {
+            transition: none;
+         }
+
+      .sheet-handle
+         {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            display: flex;
+            justify-content: center;
+            margin: 0 -1rem;
+            padding: 0.625rem 0 0.5rem;
+            background: var(--bg);
+            cursor: grab;
+            touch-action: none;
+         }
+
+      .sheet-grip
+         {
+            width: 2.25rem;
+            height: 4px;
+            background: var(--line);
+         }
+
+      .sheet-scrim
+         {
+            position: fixed;
+            inset: 0;
+            z-index: 30;
+            background: rgb(17 17 19 / 0.32);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--motion-slow) var(--ease-out);
+         }
+
+      .sheet-scrim[data-open]
+         {
+            opacity: 1;
+            pointer-events: auto;
+         }
+
+      /* The closet behind stays put while the sheet is up. */
+      :root[data-sheet-open] main
+         {
+            overflow: hidden;
+         }
    }
 
 /* The label is the container, so the prompt scales with the frame instead of the window. */
@@ -465,6 +701,17 @@ body
       .swap-in
          {
             animation: swap-in var(--motion-medium) var(--ease-out) both;
+         }
+
+      /* Switching pieces: the new photo settles in over the old one, and the words change in place. */
+      .photo-swap[data-swap][data-ready]
+         {
+            animation: photo-swap var(--motion-medium) var(--ease-out) both;
+         }
+
+      .detail-swap
+         {
+            animation: detail-swap var(--motion-base) var(--ease-out) both;
          }
 
       /* The look lands: a curtain lifts off the photo bottom to top while the photo eases back from a touch
@@ -596,6 +843,24 @@ body
          }
    }
 
+@keyframes photo-swap
+   {
+      from
+         {
+            opacity: 0;
+            transform: scale(1.02);
+         }
+   }
+
+@keyframes detail-swap
+   {
+      from
+         {
+            opacity: 0;
+            filter: blur(2px);
+         }
+   }
+
 @keyframes curtain
    {
       from
@@ -667,5 +932,36 @@ body
       .look-curtain
          {
             animation: fade-in var(--motion-base) ease-out both;
+         }
+
+      .piece-tile:active .piece-frame, .icon-button:active
+         {
+            transform: none;
+         }
+
+      .filter-tab::after
+         {
+            transition: none;
+         }
+   }
+
+/* With reduced motion the sheet fades in and out where it sits instead of sliding. */
+@media (prefers-reduced-motion: reduce) and (max-width: 63.99rem)
+   {
+      .piece-panel, .piece-panel[data-open]
+         {
+            transform: none;
+            transition: opacity var(--motion-base) ease, visibility 0s linear var(--motion-base);
+         }
+
+      .piece-panel
+         {
+            opacity: 0;
+         }
+
+      .piece-panel[data-open]
+         {
+            opacity: 1;
+            transition: opacity var(--motion-base) ease, visibility 0s;
          }
    }
