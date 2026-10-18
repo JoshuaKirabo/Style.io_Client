@@ -11,6 +11,17 @@
       --text-secondary: #6b6c72;
       --accent: #c2255c;
       --accent-soft: #fbe9ef;
+
+      /* Motion. Small things are quick; the look landing is the one slow, deliberate moment. */
+      --motion-fast: 120ms;
+      --motion-base: 200ms;
+      --motion-medium: 280ms;
+      --motion-slow: 400ms;
+      --motion-slower: 600ms;
+      --motion-reveal: 800ms;
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
    }
 
 @theme inline
@@ -117,7 +128,7 @@ body
       align-items: center;
       color: var(--text-secondary);
       white-space: nowrap;
-      transition: color 150ms ease;
+      transition: color var(--motion-fast) ease;
    }
 
 .nav-tab:hover, .nav-tab[aria-current="page"]
@@ -141,6 +152,36 @@ body
 .nav-tab[aria-current="page"]::after
    {
       transform: scaleX(1);
+   }
+
+/* Once the page is running, one bar slides between the tabs instead of each tab drawing its own. The bar is
+   1px wide and gets stretched to the tab's width, so the whole move stays on transform. */
+.nav-indicator
+   {
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 1px;
+      height: 2px;
+      background: var(--text);
+      transform-origin: left;
+      opacity: 0;
+      pointer-events: none;
+   }
+
+.nav-rail[data-ready] .nav-indicator
+   {
+      opacity: 1;
+   }
+
+.nav-rail[data-ready] .nav-tab::after
+   {
+      display: none;
+   }
+
+.nav-rail[data-animate] .nav-indicator
+   {
+      transition: transform var(--motion-slow) var(--ease-in-out);
    }
 
 /* Closet tiles show their Remove bar on hover or keyboard focus. Touch screens have no hover, so it's always there. */
@@ -193,7 +234,7 @@ body
       background: var(--text);
       color: #ffffff;
       white-space: nowrap;
-      transition: transform 120ms ease-out, background-color 150ms ease;
+      transition: transform var(--motion-fast) var(--ease-out), background-color var(--motion-fast) ease;
    }
 
 .button-primary:hover
@@ -215,22 +256,37 @@ body
       transform: none;
    }
 
-/* Text links: a caption with an underline that shows up on hover. */
+/* Text links: a caption whose underline draws in from the left on hover and leaves off the right. */
 .link-caption
    {
+      position: relative;
       display: inline-flex;
       align-items: center;
       gap: 0.375rem;
       padding: 0.5rem 0;
       color: var(--text);
-      border-bottom: 1px solid transparent;
       white-space: nowrap;
-      transition: border-color 150ms ease, color 150ms ease;
+      transition: color var(--motion-fast) ease;
    }
 
-.link-caption:hover
+.link-caption::after
    {
-      border-color: var(--text);
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0.25rem;
+      left: 0;
+      height: 1px;
+      background: currentColor;
+      transform: scaleX(0);
+      transform-origin: right;
+      transition: transform var(--motion-medium) var(--ease-out);
+   }
+
+.link-caption:hover::after
+   {
+      transform: scaleX(1);
+      transform-origin: left;
    }
 
 .link-caption.is-quiet
@@ -254,7 +310,7 @@ body
    {
       background: var(--bg);
       border: 1px solid var(--line);
-      transition: border-color 150ms ease, background-color 150ms ease, transform 120ms ease-out;
+      transition: border-color var(--motion-base) ease, background-color var(--motion-base) ease;
    }
 
 /* The empty drop frame reads as an upload area first: a dashed edge dark enough to see (3.25:1 on white),
@@ -280,10 +336,10 @@ body
       border-color: var(--line-strong);
    }
 
-/* The press lands the moment you push down, same as the buttons. */
-.frame.is-drop:has(.drop-label:active)
+/* See-through behind the photo, so a replaced look stays visible while the new one rises over it. */
+.look-frame.is-filled
    {
-      transform: scale(0.985);
+      background: transparent;
    }
 
 /* The label is the container, so the prompt scales with the frame instead of the window. */
@@ -302,7 +358,7 @@ body
 /* The upload arrow lifts toward the frame while a file is held over it, pointing where the file is going. */
 .drop-icon
    {
-      transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), color 150ms ease;
+      transition: transform var(--motion-medium) var(--ease-out), color var(--motion-fast) ease;
    }
 
 .frame.is-dragging .drop-icon
@@ -324,7 +380,7 @@ body
       background: var(--bg);
       color: var(--text);
       white-space: nowrap;
-      transition: background-color 150ms ease, color 150ms ease;
+      transition: transform var(--motion-fast) var(--ease-out), background-color var(--motion-fast) ease, color var(--motion-fast) ease;
    }
 
 .frame.is-drop:hover .button-secondary
@@ -333,12 +389,61 @@ body
       color: #ffffff;
    }
 
-/* One entrance for the page, top to bottom, then everything stays put. */
+/* Pressing anywhere on the drop area presses the button, not the whole screen-sized frame. */
+.drop-label:active .button-secondary
+   {
+      transform: scale(0.97);
+   }
+
+/* A hairline over every match row and one under the last, like the rules on a lookbook's price list. */
+.match-row
+   {
+      position: relative;
+   }
+
+.match-row::before, .match-row:last-child::after
+   {
+      content: "";
+      position: absolute;
+      right: 0;
+      left: 0;
+      height: 1px;
+      background: var(--line);
+      transform-origin: left;
+   }
+
+.match-row::before
+   {
+      top: 0;
+   }
+
+.match-row:last-child::after
+   {
+      bottom: 0;
+   }
+
+/* A line of type that rises out from under its own baseline. The padding leaves room for descenders, and the
+   text starts far enough down that none of it peeks out before it moves. */
+.line-mask
+   {
+      display: block;
+      overflow: clip;
+      padding-bottom: 0.15em;
+      margin-bottom: -0.15em;
+   }
+
+.line-reveal
+   {
+      display: block;
+   }
+
+/* Arriving on a page: the headline rises, then the line under it and the page fade in behind it. Nothing
+   slides around after that. */
 @media (prefers-reduced-motion: no-preference)
    {
       .rise
          {
-            animation: rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            animation: rise 520ms var(--ease-out) both;
          }
 
       .fade-in
@@ -346,20 +451,114 @@ body
             animation: fade-in 260ms ease-out both;
          }
 
-      /* A dropped look settles into the frame from a touch larger, so it reads as placed, not swapped in. */
-      .settle
+      .fade-in-slow
          {
-            animation: settle 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            animation: fade-in var(--motion-slower) var(--ease-out) both;
+         }
+
+      .line-reveal
+         {
+            animation: line-up 700ms var(--ease-out-expo) both;
+         }
+
+      /* The drop prompt changing to "Let go to add it" comes into focus instead of cutting over. */
+      .swap-in
+         {
+            animation: swap-in var(--motion-medium) var(--ease-out) both;
+         }
+
+      /* The look lands: a curtain lifts off the photo bottom to top while the photo eases back from a touch
+         closer, so it feels like it's settling into the frame. Runs once per look. */
+      .look-curtain
+         {
+            animation: curtain var(--motion-reveal) var(--ease-in-out) 80ms both;
+         }
+
+      .look-image
+         {
+            animation: look-settle 1200ms var(--ease-out) 80ms both;
+         }
+
+      /* Then the matches set themselves out row by row: the rule draws across, the piece's name rises, and its
+         three slots lift in a beat apart. It starts while the frame is still moving so it reads as one move. */
+      .match-list
+         {
+            --matches-start: 320ms;
+         }
+
+      .match-head
+         {
+            animation: fade-in var(--motion-slow) var(--ease-out) var(--matches-start) both;
+         }
+
+      .match-row::before, .match-row:last-child::after
+         {
+            animation: draw 700ms var(--ease-out-expo) calc(var(--matches-start) + var(--row) * 60ms) both;
+         }
+
+      .match-row:last-child::after
+         {
+            animation-delay: calc(var(--matches-start) + (var(--row) + 1) * 60ms);
+         }
+
+      .match-label
+         {
+            animation: line-up var(--motion-slower) var(--ease-out-expo) calc(var(--matches-start) + 60ms + var(--row) * 60ms) both;
+         }
+
+      .match-slot
+         {
+            animation: curtain var(--motion-slower) var(--ease-out-expo) calc(var(--matches-start) + 100ms + var(--row) * 60ms + var(--rank) * 40ms) both;
+         }
+
+      .match-score
+         {
+            animation: fade-in var(--motion-slow) var(--ease-out) calc(var(--matches-start) + 240ms + var(--row) * 60ms) both;
          }
    }
 
-@keyframes settle
+/* The view transition when a look comes in. Clicks go straight through to the live page while it plays. */
+::view-transition
    {
-      from
-         {
-            opacity: 0;
-            transform: scale(1.04);
-         }
+      pointer-events: none;
+   }
+
+/* First look: the full-width drop area pulls in to the portrait frame like an aperture closing. Nothing inside
+   gets stretched: both snapshots stay their real size and the moving box crops them. The box draws the one
+   hairline itself, so the edge stays 1px the whole way instead of scaling with the snapshot. */
+::view-transition-group(.look-add)
+   {
+      box-sizing: border-box;
+      overflow: clip;
+      border: 1px solid var(--line-strong);
+      animation-duration: var(--motion-slower);
+      animation-timing-function: var(--ease-in-out);
+   }
+
+::view-transition-old(.look-add), ::view-transition-new(.look-add)
+   {
+      height: 100%;
+      object-fit: none;
+      animation-duration: var(--motion-base);
+      animation-timing-function: var(--ease-out);
+   }
+
+/* While the box draws the edge, the frame's own border steps aside so there's only one. */
+:root:active-view-transition-type(look-add) .look-frame
+   {
+      border-color: transparent;
+   }
+
+/* Replacing a look: the old photo holds still underneath until the new one's curtain has lifted over it. */
+::view-transition-old(.look-replace)
+   {
+      animation: hold calc(var(--motion-reveal) + 80ms) linear both;
+   }
+
+::view-transition-new(.look-replace)
+   {
+      animation: none;
+      mix-blend-mode: normal;
    }
 
 @keyframes rise
@@ -379,9 +578,69 @@ body
          }
    }
 
+@keyframes line-up
+   {
+      from
+         {
+            transform: translateY(calc(100% + 0.2em));
+         }
+   }
+
+@keyframes swap-in
+   {
+      from
+         {
+            opacity: 0;
+            filter: blur(4px);
+            transform: translateY(0.15em);
+         }
+   }
+
+@keyframes curtain
+   {
+      from
+         {
+            clip-path: inset(100% 0 0 0);
+         }
+
+      to
+         {
+            clip-path: inset(0 0 0 0);
+         }
+   }
+
+@keyframes look-settle
+   {
+      from
+         {
+            transform: scale(1.12);
+         }
+   }
+
+@keyframes draw
+   {
+      from
+         {
+            transform: scaleX(0);
+         }
+   }
+
+@keyframes hold
+   {
+      from
+         {
+            opacity: 1;
+         }
+
+      to
+         {
+            opacity: 1;
+         }
+   }
+
 @media (prefers-reduced-motion: reduce)
    {
-      .button-primary:active, .frame.is-drop:has(.drop-label:active)
+      .button-primary:active, .drop-label:active .button-secondary
          {
             transform: none;
          }
@@ -392,8 +651,21 @@ body
             transform: none !important;
          }
 
-      .settle
+      /* Underlines and the tab bar just appear where they're going. */
+      .link-caption::after, .nav-rail[data-animate] .nav-indicator
          {
-            animation: fade-in 200ms ease-out both;
+            transition: none;
+         }
+
+      /* No aperture and no curtain: the new look simply fades in. */
+      ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*)
+         {
+            animation-duration: 0s !important;
+            animation-delay: 0s !important;
+         }
+
+      .look-curtain
+         {
+            animation: fade-in var(--motion-base) ease-out both;
          }
    }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { addTransitionType, startTransition, useCallback, useEffect, useState } from "react";
 import { ACCEPTED_TYPES, LookFrame, type Look } from "@/components/LookFrame";
 import { MatchList } from "@/components/MatchList";
 import { Toolbar } from "@/components/Toolbar";
@@ -11,7 +11,7 @@ export function LookBoard({ className = "" }: { className?: string })
     const [look, setLook] = useState<Look | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
 
-    const takeLook = useCallback((file: File | undefined) =>
+    const takeLook = useCallback(async (file: File | undefined) =>
       {
         if(!file) return;
 
@@ -22,8 +22,22 @@ export function LookBoard({ className = "" }: { className?: string })
           }
 
         setNotice(null);
-        setLook({ url: URL.createObjectURL(file), name: file.name || "Pasted screenshot" });
-      }, []);
+        const url = URL.createObjectURL(file);
+
+        // Decoding the photo first, so the curtain lifts off the picture instead of an empty frame.
+        // If it won't decode, it goes in anyway and the browser shows what it can.
+        const preview = new Image();
+        preview.src = url;
+        await preview.decode().catch(() => undefined);
+
+        // Running it as a transition lets the frame animate from the drop area into the look. The type says
+        // whether it's the first look or a swap, since those two move differently.
+        startTransition(() =>
+          {
+            addTransitionType(look ? "look-replace" : "look-add");
+            setLook({ url, name: file.name || "Pasted screenshot" });
+          });
+      }, [look]);
 
     // Letting go of the old preview whenever a new one replaces it, so it doesn't sit in memory.
     useEffect(() =>
