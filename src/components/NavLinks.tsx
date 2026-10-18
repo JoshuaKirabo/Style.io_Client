@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef } from "react";
 import { useCloset } from "@/components/ClosetProvider";
 
-const LINKS = [
+// A short label, where there is one, stands in on a phone so all the tabs fit across.
+const LINKS: { href: string; label: string; short?: string }[] = [
   { href: "/", label: "Match" },
   { href: "/closet", label: "Closet" },
   { href: "/saved", label: "Saved" },
+  { href: "/pictures", label: "My pictures", short: "Pictures" },
 ];
 
 // The current tab gets ink and a bar sitting on the header's bottom line; the rest stay grey.
@@ -67,7 +69,12 @@ export function NavLinks()
               return (
                 <li key={link.href} className="flex">
                   <Link href={link.href} aria-current={current ? "page" : undefined} className="nav-tab caption">
-                    {link.label}
+                    {link.short ? (
+                      <>
+                        <span className="sm:hidden">{link.short}</span>
+                        <span className="hidden sm:inline">{link.label}</span>
+                      </>
+                    ) : link.label}
                     {link.href === "/closet" && <span className="ml-1.5 tabular-nums text-text-secondary">{pieces.length}</span>}
                   </Link>
                 </li>
