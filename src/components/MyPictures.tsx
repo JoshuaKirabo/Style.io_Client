@@ -5,6 +5,8 @@ import { ACCEPTED_TYPES } from "@/components/LookFrame";
 import { Toolbar } from "@/components/Toolbar";
 import type { Picture } from "@/lib/my-pictures";
 
+const PREVIEW_COUNT = 12;
+
 // Your own photos for the model to learn from. They're saved to a folder beside the training code, not kept
 // in the browser, so they're still there after a reload.
 export function MyPictures()
@@ -13,11 +15,18 @@ export function MyPictures()
     const [pictures, setPictures] = useState<Picture[] | null>(null);
     const [adding, setAdding] = useState(false);
     const [dragging, setDragging] = useState(false);
+    // Select mode: tapping a photo ticks it, and the bar's Remove deletes every ticked one at once.
+    const [selecting, setSelecting] = useState(false);
+    const [selected, setSelected] = useState<Set<string>>(new Set());
 
     useEffect(() =>
       {
+        // Temporary: with no photos uploaded yet, the grid shows blank tiles instead of the drop box, so the full
+        // page can be seen.
+        const placeholders = Array.from({ length: PREVIEW_COUNT }, (_, index) => ({ name: `preview-${index}`, url: "" }));
+
         let live = true;
-        fetch("/api/pictures").then((response) => response.json()).then((list: Picture[]) => live && setPictures(list));
+        fetch("/api/pictures").then((response) => response.json()).then((list: Picture[]) => live && setPictures(list.length ? list : placeholders));
 
         return () =>
           {
@@ -40,7 +49,8 @@ export function MyPictures()
             if(response.ok)
               {
                 const saved: Picture[] = await response.json();
-                setPictures((current) => [...saved, ...(current ?? [])]);
+                // Real photos replace the blank tiles.
+                setPictures((current) => [...saved, ...(current ?? []).filter((picture) => picture.url)]);
               }
           }
         finally
@@ -49,11 +59,46 @@ export function MyPictures()
           }
       };
 
-    // Gone from the grid straight away; the file is deleted behind it.
-    const remove = (name: string) =>
+    const stopSelecting = () =>
       {
-        setPictures((current) => current?.filter((picture) => picture.name !== name) ?? current);
-        fetch(`/api/pictures/${encodeURIComponent(name)}`, { method: "DELETE" });
+        setSelecting(false);
+        setSelected(new Set());
+      };
+
+    // Escape leaves select mode without removing anything.
+    useEffect(() =>
+      {
+        if(!selecting) return;
+
+        const handleKey = (event: KeyboardEvent) =>
+          {
+            if(event.key === "Escape") stopSelecting();
+          };
+
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+      }, [selecting]);
+
+    const toggle = (name: string) =>
+      {
+        setSelected((current) =>
+          {
+            const next = new Set(current);
+            if(next.has(name)) next.delete(name);
+            else next.add(name);
+            return next;
+          });
+      };
+
+    // Gone from the grid straight away; the files are deleted behind it.
+    const removeSelected = () =>
+      {
+        setPictures((current) => current?.filter((picture) => !selected.has(picture.name)) ?? current);
+        selected.forEach((name) =>
+          {
+            if(!name.startsWith("preview-")) fetch(`/api/pictures/${encodeURIComponent(name)}`, { method: "DELETE" });
+          });
+        stopSelecting();
       };
 
     const handleDragOver = (event: DragEvent) =>
@@ -94,11 +139,21 @@ export function MyPictures()
         />
 
         <Toolbar title="My pictures">
-          {count > 0 && (
-            <button type="button" disabled={adding} onClick={() => inputRef.current?.click()} className="button-primary caption">
-              {adding ? "Adding" : "Add pictures"}
-            </button>
-          )}
+          {count > 0 && (selecting ? (
+            <>
+              <button type="button" onClick={stopSelecting} className="link-caption caption is-quiet">Cancel</button>
+              <button type="button" disabled={!selected.size} onClick={removeSelected} className="button-primary caption">
+                {selected.size ? `Remove ${selected.size}` : "Remove"}
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={() => setSelecting(true)} className="link-caption caption">Select</button>
+              <button type="button" disabled={adding} onClick={() => inputRef.current?.click()} className="button-primary caption">
+                {adding ? "Adding" : "Add pictures"}
+              </button>
+            </>
+          ))}
         </Toolbar>
 
         {pictures && count === 0 && (
@@ -129,20 +184,37 @@ export function MyPictures()
         {count > 0 && (
           <section aria-label="Pictures" data-dragging={dragging ? "" : undefined} style={{ animationDelay: "120ms" }} className="pictures-grid rise">
             <ul className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-6 lg:grid-cols-4 xl:grid-cols-5">
-              {pictures?.map((picture) => (
-                <li key={picture.name} className="picture-tile fade-in relative">
-                  <span className="frame piece-surface block aspect-[3/4] overflow-hidden">
-                    {/* Served from the local folder, so next/image has nothing to optimise here. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={picture.url} alt="" loading="lazy" className="h-full w-full object-cover" />
-                  </span>
-                  <button type="button" onClick={() => remove(picture.name)} aria-label="Remove picture" className="picture-remove">
-                    <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-4">
-                      <path d="M6 6l12 12M18 6 6 18" />
-                    </svg>
-                  </button>
-                </li>
-              ))}
+              {pictures?.map((picture, index) =>
+                {
+                  const photo = (
+                    <span className="picture-photo frame piece-surface block aspect-[3/4] overflow-hidden">
+                      {/* Served from the local folder, so next/image has nothing to optimise here. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {picture.url && <img src={picture.url} alt="" loading="lazy" className="h-full w-full object-cover" />}
+                    </span>
+                  );
+
+                  return (
+                    <li key={picture.name} className="fade-in">
+                      {selecting ? (
+                        <button
+                          type="button"
+                          aria-pressed={selected.has(picture.name)}
+                          aria-label={`Picture ${index + 1}`}
+                          onClick={() => toggle(picture.name)}
+                          className="picture-tile relative block w-full"
+                        >
+                          {photo}
+                          <span aria-hidden className="picture-check">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
+                              <path d="m5 12.5 4.5 4.5L19 7.5" />
+                            </svg>
+                          </span>
+                        </button>
+                      ) : photo}
+                    </li>
+                  );
+                })}
             </ul>
           </section>
         )}
